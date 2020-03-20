@@ -651,11 +651,7 @@ class Sampler(object):
         # sigma^2 = <Z^2> - <Z>^2
         # log(sigma^2) = log(<Z^2>) + log(1 - <Z>^2/<Z^2>)
         # Standard error = sqrt(sigma^2/N)
-        lnsZ = 0.5 * (
-            lnZ2
-            + np.log1p(-np.exp(2.0 * lnZ - lnZ2))
-            - np.log(lninteg.shape[0])
-        )
+        lnsZ = 0.5 * (lnZ2 + np.log1p(-np.exp(2.0 * lnZ - lnZ2)) - np.log(lninteg.shape[0]))
 
         # dlnZ = sigma / Z
         dlnZ = np.exp(lnsZ - lnZ)
@@ -901,10 +897,7 @@ class Sampler(object):
         if window_length > 2:
             last_acc_rate = self.acceptance_fraction[-1]
 
-            nacc = (
-                self.nwalkers
-                * self.acceptance_fraction[window_start: self.iterations]
-            )
+            nacc = (self.nwalkers * self.acceptance_fraction[window_start: self.iterations])
             expected_freqs = last_acc_rate * self.nwalkers * np.ones_like(nacc)
 
             _, p_val = chisquare(nacc, expected_freqs)

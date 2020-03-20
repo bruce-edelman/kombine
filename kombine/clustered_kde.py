@@ -297,9 +297,7 @@ class KDE(object):
 
             # Make sure the estimated PDF integrates to 1.0
             self._lognorm = (
-                self.ndim / 2 * np.log(2 * np.pi)
-                + np.log(self.size)
-                + np.sum(np.log(np.diag(self._cho_factor[0])))
+                self.ndim / 2 * np.log(2 * np.pi) + np.log(self.size) + np.sum(np.log(np.diag(self._cho_factor[0])))
             )
 
         else:

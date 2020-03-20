@@ -155,17 +155,9 @@ class TestSampler:
         count_std = self.nwalkers * 1 / self.nmodes * (1 - 1 / self.nmodes)
 
         for mean, sel in zip(self.target.means, mode_sel):
-            assert (
-                np.abs(np.count_nonzero(sel) - self.nwalkers / self.nmodes)
-                < std_threshold * count_std
-            )
-            assert np.all(
-                (np.mean(p[sel], axis=0) - mean) ** 2 < 10.0 ** log_threshold
-            )
-            assert np.all(
-                (np.cov(p[sel], rowvar=0) - self.target.cov) ** 2
-                < 10.0 ** log_threshold
-            )
+            assert (np.abs(np.count_nonzero(sel) - self.nwalkers / self.nmodes) < std_threshold * count_std)
+            assert np.all((np.mean(p[sel], axis=0) - mean) ** 2 < 10.0 ** log_threshold)
+            assert np.all((np.cov(p[sel], rowvar=0) - self.target.cov) ** 2 < 10.0 ** log_threshold)
 
         # Check marginal likelihood estimate
         lnZ, dlnZ = self.sampler.ln_ev(self.nwalkers)
