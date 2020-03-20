@@ -16,9 +16,9 @@ from .serialpool import SerialPool
 
 import numpy as np
 import numpy.ma as ma
+import tqdm
 
 from scipy.stats import chisquare
-
 from .clustered_kde import optimized_kde, TransdimensionalKDE
 
 
@@ -160,6 +160,7 @@ class Sampler(object):
         max_steps=None,
         verbose=False,
         callback=None,
+        progress=False,
         **kwargs
     ):
         r"""
@@ -239,6 +240,7 @@ class Sampler(object):
         if max_steps is not None:
             max_iter = start + max_steps
 
+        sampling_ct = 0
         step_size = 2
         while step_size <= test_steps:
             # Update the proposal
@@ -250,6 +252,7 @@ class Sampler(object):
 
             # Take one step to estimate acceptance rate
             test_interval = 1
+
             results = self.run_mcmc(
                 test_interval,
                 p0,
@@ -257,7 +260,7 @@ class Sampler(object):
                 lnprop0,
                 blob0,
                 freeze_transd=freeze_transd,
-                spaces=self._burnin_spaces,
+                spaces=self._burnin_spaces, progress=False,
                 **kwargs
             )
             try:
@@ -288,7 +291,14 @@ class Sampler(object):
 
             # Make sure we're taking at least one step
             test_interval = max(test_interval, 1)
-
+            sampling_ct += 1
+            if progress and verbose:
+                if max_iter:
+                    print("Time {} running mcmc during burnin with {}/{} Iterations and test_interval = {}:".format(
+                        sampling_ct, self.iterations, max_iter, test_interval))
+                else:
+                    print("Time {} running mcmc during burnin with test_interval = {}:".format(
+                        sampling_ct, test_interval))
             results = self.run_mcmc(
                 test_interval,
                 p,
@@ -297,6 +307,7 @@ class Sampler(object):
                 blob,
                 freeze_transd=freeze_transd,
                 spaces=self._burnin_spaces,
+                progress=progress,
                 **kwargs
             )
             try:
@@ -353,6 +364,7 @@ class Sampler(object):
         freeze_transd=False,
         spaces=None,
         storechain=True,
+        progress=False,
         **kwargs
     ):
         r"""
@@ -504,7 +516,11 @@ class Sampler(object):
                 (self._lnprop, np.zeros((iterations, self.nwalkers)))
             )
 
-        for i in range(int(iterations)):
+        if progress and iterations > 1:
+            pbar = tqdm.tqdm(range(iterations))
+        else:
+            pbar = range(iterations)
+        for i in pbar:
             try:
                 if freeze_transd and spaces is None:
                     spaces = ~p.mask
@@ -583,10 +599,10 @@ class Sampler(object):
 
                     self.stored_iterations += 1
                 self.iterations += 1
-
                 # create generator for sampled points
                 if blob:
                     yield p, lnpost, lnprop, blob
+
                 else:
                     yield p, lnpost, lnprop
 
@@ -1000,10 +1016,8 @@ class Sampler(object):
                         blob0 = [r[2] for r in results]
                     except IndexError:
                         blob0 = None
-
         for results in self.sample(p0, lnpost0, lnprop0, blob0, N, **kwargs):
             pass
-
         # Store the results for later continuation and toss out the blob
         self._last_run_mcmc_result = results[:3]
 
