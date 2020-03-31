@@ -11,16 +11,13 @@ from __future__ import (
     unicode_literals,
 )
 
-from .interruptible_pool import Pool
-from .serialpool import SerialPool
-
 import numpy as np
 import numpy.ma as ma
-import tqdm, time
+import tqdm
 
 from scipy.stats import chisquare
 from .clustered_kde import optimized_kde, TransdimensionalKDE
-
+from .pool import choose_pool
 
 class _GetLnProbWrapper(object):
     r"""Convenience class for evaluating multiple probability densities at a
@@ -127,6 +124,7 @@ class Sampler(object):
         processes=None,
         pool=None,
         args=[],
+        **kwargs
     ):
 
         self.nwalkers = nwalkers
@@ -149,13 +147,8 @@ class Sampler(object):
         self._managing_pool = False
         if pool is not None:
             self._pool = pool
-        elif self.processes == 1 or self.processes is None:
-            self._pool = SerialPool()
-            self.processes = 1
         else:
-            self._managing_pool = True
-            # create a multiprocessing pool
-            self._pool = Pool(self.processes)
+            self._pool = choose_pool(processes, **kwargs)
 
         self._transd = transd
         if self._transd:

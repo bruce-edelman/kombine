@@ -1,4 +1,17 @@
 """
+This is MPIPool() implementation found here:
+https://github.com/willvousden/ptemcee/blob/master/ptemcee/mpi_pool.py
+"""
+# -*- coding: utf-8 -*-
+from schwimmbad import MPIPool
+import types, atexit
+import signal
+import functools
+from multiprocessing.pool import Pool as MPPool
+from multiprocessing import TimeoutError
+
+
+"""
 This is a drop-in replacement for multiprocessing's pool that
 plays better with keyboard interrupts.  This implimentation is a modified
 version of one originally written by Peter K. G. Williams <peter@newton.cx>
@@ -10,11 +23,6 @@ which was an adaptation of a method written by John Reese, shared as
 
     * `<https://github.com/jreese/multiprocessing-keyboardinterrupt/>`_
 """
-
-import signal
-import functools
-from multiprocessing.pool import Pool as MPPool
-from multiprocessing import TimeoutError
 
 
 def _initializer_wrapper(initializer, *args):
@@ -78,3 +86,37 @@ class Pool(MPPool):
                 self.terminate()
                 self.join()
                 raise
+
+
+class SerialPool(object):
+    def close(self):
+        return
+
+    def map(self, function, tasks, callback=None):
+        results = []
+        for task in tasks:
+            result = function(task)
+            if callback is not None:
+                callback(result)
+            results.append(result)
+        return results
+
+
+def _dummy_broadcast(self, f, args):
+    self.map(f, [args] * self.size)
+
+
+def choose_pool(processes, mpi=False):
+    if mpi:
+        try:
+            pool = MPIPool
+            pool.broadcast = types.MethodType(_dummy_broadcast, pool)
+            atexit.register(pool.close)
+        except ImportError:
+            raise ValueError("Failed to start up an MPI pool, "
+                             "install mpi4py / schwimmbadd")
+    elif processes == 1:
+        pool = SerialPool()
+    else:
+        pool = Pool(processes)
+    return pool
