@@ -3,7 +3,7 @@ This is MPIPool() implementation found here:
 https://github.com/willvousden/ptemcee/blob/master/ptemcee/mpi_pool.py
 """
 # -*- coding: utf-8 -*-
-from schwimmbad import MPIPool
+import schwimmbad
 import types, atexit
 import signal
 import functools
@@ -109,7 +109,7 @@ def _dummy_broadcast(self, f, args):
 def choose_pool(processes, mpi=False):
     if mpi:
         try:
-            pool = MPIPool
+            pool = schwimmbad.choose_pool(mpi=mpi, processes=processes)
             pool.broadcast = types.MethodType(_dummy_broadcast, pool)
             atexit.register(pool.close)
         except ImportError:
