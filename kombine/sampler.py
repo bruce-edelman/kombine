@@ -129,14 +129,14 @@ class Sampler(object):
         self.stored_iterations = 0
         self.mpi = mpi
         self.processes = processes
-        if processes is None and pool is not None:
-            raise ValueError("Please provide the number of processes if "
-                             " if also providing a pool instance.")
+
         self._managing_pool = False
         if pool is not None:
             self._pool = pool
         else:
             self._managing_pool = True
+            if processes is None:
+                processes = 1
             self._pool = choose_pool(processes, mpi=mpi)
 
         if not hasattr(self._pool, 'map'):
